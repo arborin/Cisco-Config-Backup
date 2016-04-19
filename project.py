@@ -250,8 +250,8 @@ class MainApp:
 		
 		
 		if cat and dev_name:
-			self.select_dev = "SELECT id FROM list WHERE name = '{}'".format(cat)
-			self.id = self.db.select(self.select_cat)
+			self.select_dev = "SELECT id FROM list WHERE name = '{}'".format(dev_name)
+			self.id = self.db.select(self.select_dev)
 			if self.id:
 				self.write_log("NAME {} IS ALREADY EXSISTS!".format(dev_name), "WARNING")
 			else:
