@@ -7,11 +7,12 @@ import paramiko
 from tabulate import tabulate
 from threading import Thread
 import pyperclip
+from tkinter import messagebox
 
 
 class Database:
 	def __init__(self):
-		self.conn = sqlite3.connect('device_db', check_same_thread=False)
+		self.conn = sqlite3.connect('device.db', check_same_thread=False)
 		# self.conn = sqlite3.connect('device_db')
 		self.c = self.conn.cursor()
 
@@ -162,6 +163,18 @@ class MainApp:
 		self.cat_id = self.db.select(self.select_cat)
 		self.id.configure(text=self.cat_id[0][0])
 	
+	# def update_dev(self, root):
+	# 	self.cat = self.cb.get()
+	# 	self.id = int(self.id.cget('text'))
+		
+	# 	if self.cat:
+	# 		ins_cat = "UPDATE list SET name = '{}' WHERE ID = {};".format(self.cat, self.id)
+
+	# 		root.destroy()
+	# 	else :
+	# 		self.write_log("Category is empty!", "WARNING")
+	# 	root.destroy()
+
 	def update_cat(self, root):
 		self.cat = self.cb.get()
 		self.id = int(self.id.cget('text'))
@@ -171,15 +184,66 @@ class MainApp:
 			self.db.insert(ins_cat)
 			self.treeview.delete(*self.treeview.get_children())
 			self.get_tree_view()
+			root.destroy()
+		else :
+			self.write_log("Category is empty!", "WARNING")
+		root.destroy()
+
+	def delete_cat(self, root):
+		cat = self.cb.get()
+		id = int(self.id.cget('text'))
+		
+		print(cat, id)
+		
+		if self.cat:
+			select_cat = "SELECT id from list WHERE cat = {};".format(id)
+
+			cat_result = self.db.select(select_cat)
+			print(cat_result)
+
+			if len(cat_result)>0:
+				messagebox.showinfo("Info", "Category contain devices!")
+			else:
+				del_dev = "DELETE FROM list WHERE id = '{}'".format(id)
+				self.db.select(del_dev)
 			
-			# 
-			# self.select_cat = "SELECT id, name FROM list WHERE name = '{}'".format(self.cat)
-			# self.cat = self.db.select(self.select_cat)
-			# 
-			# # for row in self.cat:
-			# # 	self.treeview.tag_configure('{}'.format(row[0]), '{}'.format(row[0]), text = '{}'.format(row[1]))
-			# self.treeview.tag_configure('{}'.format(self.id), text='{}'.format(self.cat))
-			# self.write_log('ADD NEW CATEGORY - {}'.format(self.cat[0][1]), 'INFO')
+			self.treeview.delete(*self.treeview.get_children())
+			self.get_tree_view()
+			root.destroy()
+		else :
+			self.write_log("Category is empty!", "WARNING")
+		root.destroy()
+
+	def update_dev(self, root):
+		
+		id = int(self.id.get())
+		cat = self.cb.get()
+		name = self.name.get()
+		ip_add = self.ip_add.get()
+		user_name = self.user_name.get()
+		user_pswd = self.user_pswd.get()
+		user_enpswd = self.user_enpswd.get()
+		
+		print("{} {} {} {} {} {} {}".format(id, cat, name, ip_add, user_name, user_pswd, user_enpswd))
+
+
+		self.select_cat = "SELECT id FROM list WHERE name='{}'".format(cat)
+		cat_result = self.db.select(self.select_cat)
+		cat_id = cat_result[0][0]
+		
+		if self.cat:
+			update_dev = """UPDATE list SET cat = '{}', 
+											name = '{}', 
+											ip = '{}', 
+											user = '{}', 
+											pass = '{}', 
+											enable = '{}' 
+							 WHERE ID = {};""".format(cat_id, name, ip_add, user_name, user_pswd, user_enpswd, id)
+			print(update_dev)
+			self.db.insert(update_dev)
+			self.treeview.delete(*self.treeview.get_children())
+			self.get_tree_view()
+			
 			root.destroy()
 		else :
 			self.write_log("Category is empty!", "WARNING")
@@ -187,7 +251,7 @@ class MainApp:
 	
 	def edit_category(self):
 		self.popup = Toplevel(self.master)
-		self.popup.title('New Device')
+		self.popup.title('Edit category')
 		sw = self.popup.winfo_screenwidth()
 		sh = self.popup.winfo_screenheight()
 		w = 100
@@ -215,10 +279,11 @@ class MainApp:
 		# self.id.grid(row = 3, column = 0, padx = 10, pady = 10, sticky = 'e')
 		
 		
-		self.delete = ttk.Button(self.popup, text = 'Delete', command = lambda: self.popup.destroy())
+		# self.delete = ttk.Button(self.popup, text = 'Delete', command = lambda: self.popup.destroy())
+		self.delete = ttk.Button(self.popup, text = 'Delete', command = lambda: self.delete_cat(self.popup))
 		self.delete.grid(row = 6, column = 1, sticky = 'e')
 
-		self.update = ttk.Button(self.popup, text = 'Update', command = lambda: self.update_cat(self.popup))
+		self.update = ttk.Button(self.popup, text = 'Update Dev', command = lambda: self.update_cat(self.popup))
 		self.update.grid(row = 6, column = 2, sticky = 'e')
 		
 	
@@ -238,6 +303,20 @@ class MainApp:
 		self.title = Label(self.popup, text = "This program makes cisco config backups").pack()
 		self.name = Label(self.popup, text = "Nika Kobaidze").pack()
 		self.date = Label(self.popup, text = "2016").pack()
+
+
+	def delete_dev(self, root):
+		id = int(self.id.get())
+		
+		del_dev = "DELETE FROM list WHERE id = '{}'".format(id)
+		self.db.select(del_dev)
+
+		self.write_log('DEVICE DELETED, ID: - {}'.format(id), 'INFO')
+
+		self.treeview.delete(*self.treeview.get_children())
+		self.get_tree_view()	
+		root.destroy()
+
 
 	def save_dev(self, root):
 		cat = self.cb.get()
@@ -277,7 +356,96 @@ class MainApp:
 			self.write_log("CATEGORY OR NAME IS EMPTY!", "WARNING")
 		root.destroy()
 
+	def edit_device(self):
+		device_id = format(self.v_id.cget("text"))
+
+		if device_id.isdigit():
+			self.popup = Toplevel(self.master)
+			self.popup.title("Edit Device")
+			sw = self.popup.winfo_screenwidth()
+			sh = self.popup.winfo_screenheight()
+			w = 300
+			h = 300
+			self.popup.geometry('{}x{}+{}+{}'.format(h, w, int(sw/2-w/2), int(sh/2-h/2)))
+			self.popup.resizable(False, False)
+
+			id = self.v_id.cget('text')
+			ip = self.v_ip.cget("text")
+			device = self.v_dname.cget("text")
+			user = self.v_uname.cget("text")
+			psw = self.v_pass.cget("text")
+			enable = self.en_pass.cget("text")
+			cat = self.v_cat.cget("text")
+			
+			self.name = Label(self.popup, text = "Category")
+			self.name.grid(row = 0, column = 0, padx = 10, pady = 10, sticky = 'e')
+
+			choice_var = StringVar()
+			self.select_dev = "SELECT id, cat, name, ip FROM list WHERE cat is null"
+			self.dev = self.db.select(self.select_dev)
+			self.cat = []
+
+			for row in self.dev:
+				self.cat.append(row[2])
+
+			
+
+			self.cb = ttk.Combobox(self.popup)
+			self.cb.config(width = "18")
+			self.cb['values'] = self.cat
+			self.cb.insert(0, cat)
+			self.cb.grid(row = 0, column = 1, padx = 10, pady = 10, columnspan = 2, sticky = 'e')
+
+			self.device = Label(self.popup, text = "Device")
+			self.device.grid(row = 1, column = 0, padx = 10, pady = 10, sticky = 'e')
+			self.name = Entry(self.popup, width = 20)
+			self.name.insert(0, device)
+			self.name.grid(row = 1, column = 1, columnspan = 2)
+
+			self.ip = Label(self.popup, text = "Ip")
+			self.ip.grid(row = 2, column = 0, padx = 10, pady = 10, sticky = 'e')
+			self.ip_add = Entry(self.popup, width = 20)
+			self.ip_add.insert(0, ip)
+			self.ip_add.grid(row = 2, column = 1, columnspan = 2)
+
+			self.user = Label(self.popup, text = "User")
+			self.user.grid(row = 3, column = 0, padx = 10, pady = 10, sticky = 'e')
+			self.user_name = Entry(self.popup, width = 20)
+			self.user_name.insert(0, user)
+			self.user_name.grid(row = 3, column = 1, columnspan = 2)
+
+			self.pswd = Label(self.popup, text = "SSH Passwd")
+			self.pswd.grid(row = 4, column = 0, padx = 10, pady = 10, sticky = 'e')
+			self.user_pswd = Entry(self.popup, width = 20)
+			self.user_pswd.insert(0, psw)
+			self.user_pswd.grid(row = 4, column = 1, columnspan = 2)
+			
+			self.enpswd = Label(self.popup, text = "Enable Passwd")
+			self.enpswd.grid(row = 5, column = 0, padx = 10, pady = 10, sticky = 'e')
+			self.user_enpswd = Entry(self.popup, width = 20)
+			self.user_enpswd.insert(0, enable)
+			self.user_enpswd.grid(row = 5, column = 1, columnspan = 2)
+			
+			# self.cancel = ttk.Button(self.popup, text = 'Delete', command = lambda: self.popup.destroy())
+			self.cancel = ttk.Button(self.popup, text = 'Delete', command = lambda: self.delete_dev(self.popup))
+			self.cancel.grid(row = 6, column = 1, sticky = 'e')
+
+			self.save = ttk.Button(self.popup, text = 'Update', command = lambda: self.update_dev(self.popup))
+			self.save.grid(row = 6, column = 2, sticky = 'e')
+
+			# ID HIDDEN
+			self.id = Entry(self.popup, width = 20)
+			self.id.insert(0, id)
+			self.id.grid(row = 7, column = 1, padx = 10, pady = 10, columnspan = 2, sticky = 'e')
+		else:
+			messagebox.showinfo("Info", "Please select device")
+		
+
+		
+
+
 	def new_device(self):
+
 		self.popup = Toplevel(self.master)
 		self.popup.title('New Device')
 		sw = self.popup.winfo_screenwidth()
@@ -365,6 +533,7 @@ class MainApp:
 		self.save = ttk.Button(self.popup, text = 'Save', command = lambda: self.save_tftp(self.popup))
 		self.save.grid(row = 5, column = 2, sticky = 'e')
 	
+
 	def save_command(self, root):
 		new_command = self.command.get()
 
@@ -374,6 +543,7 @@ class MainApp:
 		self.write_log('ADD NEW COMMAND {}'.format(new_command), 'INFO')
 		root.destroy()
 		
+
 	def new_command(self):
 		self.popup = Toplevel(self.master)
 		self.popup.title('New Command')
@@ -396,6 +566,7 @@ class MainApp:
 		self.save = ttk.Button(self.popup, text = 'Save', command = lambda: self.save_command(self.popup))
 		self.save.grid(row = 5, column = 2, sticky = 'e')
 
+
 	def newselection(self, event):
 		self.date_cb.set('')
 		self.value_of_combo = self.conf_cb.get()
@@ -413,13 +584,15 @@ class MainApp:
 		self.date_cb['values'] = self.date
 		print(self.value_of_combo)
 	
+
 	def selectNode(self, event):
 		item = self.treeview.selection()
 
-		print("----------ITEM--------{}".format(item))
 		self.dev_name = self.treeview.item(item, "text")
-		self.select_dev = "SELECT name, ip, cat, user, pass, id, enable FROM list WHERE name='{}'".format(self.dev_name)
+		self.select_dev = "SELECT l.name, l.ip, l.cat, l.user, l.pass, l.id, l.enable, l2.name FROM list l LEFT join list l2 ON l.cat=l2.id  WHERE l.name='{}'".format(self.dev_name)
 		self.dev = self.db.select(self.select_dev)
+
+		print(self.dev)
 		for row in self.dev:
 			if row[2]:
 				try:
@@ -431,9 +604,12 @@ class MainApp:
 					self.v_pass.config(text = '{}'.format(row[4]))
 					self.v_id.config(text = '{}'.format(row[5]))
 					self.en_pass.config(text = '{}'.format(row[6]))
+					self.v_cat.config(text = '{}'.format(row[7]))
+					
 				except:
 					pass
-		
+
+
 	def set_backup_date(self):
 		self.date_cb.set('')
 		self.date_cb['values'] = []
@@ -457,6 +633,7 @@ class MainApp:
 				self.date_cb['values'] = self.date
 				print(self.dev_name)
 	
+
 	def update_dev_list(self):
 		self.select_dev = "SELECT id, cat, name, ip FROM list WHERE cat not null"
 		self.dev = self.db.select(self.select_dev)
@@ -465,6 +642,7 @@ class MainApp:
 			self.cat.append(row[2])
 		self.conf_cb['values'] = self.cat
 	
+
 	def update_fttp_list(self):
 		self.tftp_query = "SELECT ip FROM tftp"
 		self.temp = self.db.select(self.tftp_query)
@@ -473,6 +651,7 @@ class MainApp:
 			self.server_list.append(row[0])
 		self.cb_tftp['values'] = self.server_list
 	
+
 	def update_command_list(self):
 		self.command_query = "SELECT command FROM command"
 		self.temp = self.db.select(self.command_query)
@@ -480,13 +659,13 @@ class MainApp:
 		for row in self.temp:
 			self.command_list.append(row[0])
 		self.cb_command['values'] = self.command_list
-		
+
+
 	def makeConfigBackup(self):
 		self.write_log('BACKUP THREAD', 'WARNING')
 		t = Thread(target=self.make_backup_thread)
 		t.start()
-		
-		
+			
 			
 	def make_backup_thread(self):
 		self.write_log('BACKUP FUNCTION RUN', 'WARNING')
@@ -554,6 +733,7 @@ class MainApp:
 			except:
 				self.write_log('CONNECTION ERROR!', 'WARNING')
 
+
 	def showBackup(self):
 		self.device = self.conf_cb.get()
 		self.date = self.date_cb.get()
@@ -575,6 +755,7 @@ class MainApp:
 		else:
 			self.write_log('SELECT DEVICE AND DATE','WARNING')
 	
+
 	def showDetails(self):
 		self.select_dev = "SELECT id, name, ip FROM list WHERE cat not null"
 		self.select_dev = self.db.select(self.select_dev)
@@ -613,6 +794,7 @@ class MainApp:
 			self.cb_tftp.set('')
 			self.cb_tftp.pack_forget()
 	
+
 	def run_command(self):
 		self.command = self.cb_command.get()
 
@@ -694,15 +876,18 @@ class MainApp:
 		self.update_stats()
 		print(self.conf)
 
+
 	def get_dev_number(self):
 		self.select_dev = "SELECT id, name FROM list WHERE cat not null"
 		self.select_dev = self.db.select(self.select_dev)
 		self.num_of_dev.configure(text=len(self.select_dev))
 
+
 	def get_backup_number(self):
 		self.select_back = "SELECT id FROM config"
 		self.select_back = self.db.select(self.select_back)
 		self.num_of_back.configure(text=len(self.select_back))
+
 
 	def get_without_backup(self):
 		self.select_dev = "SELECT id FROM list WHERE cat not null"
@@ -715,6 +900,7 @@ class MainApp:
 			if i not in self.all_backup:
 				self.count+=1
 		self.without_backup.configure(text=self.count)
+
 
 	def get_old_new(self):
 		self.new = "SELECT `date` FROM config group by dev_id order by date desc;"
@@ -730,6 +916,8 @@ class MainApp:
 			self.old_lbl.configure(text = str(self.old[0][0]))
 		else:
 			self.old_lbl.configure(text = "-----")
+
+
 	def get_tree_view(self):
 		self.select_cat = "SELECT id, name FROM list WHERE cat is null"
 		self.cat = self.db.select(self.select_cat)
@@ -747,6 +935,7 @@ class MainApp:
 
 		self.treeview.bind("<Button-1>", self.selectNode)
 	
+
 	def update_stats(self):
 		self.get_backup_number()
 		self.get_dev_number()
@@ -758,6 +947,7 @@ class MainApp:
 		self.get_tree_view()
 		self.write_log("UPDATE STATISTIC", "INFO")
 	
+
 	def run_thread_command(self, ip, user, psw, enable):
 			remote_conn_pre = paramiko.SSHClient()
 			remote_conn_pre.set_missing_host_key_policy(paramiko.AutoAddPolicy())# remote_conn_pre.connect("192.168.164.5", username = "admin", password = "123456", look_for_keys = False, allow_agent = False)
@@ -813,7 +1003,8 @@ class MainApp:
 			
 			t = Thread(target=self.run_thread_command, args=(ip,user,psw, enable))
 			t.start()
-			
+
+
 	def copy_to_clipboard(self):
 		self.device = self.conf_cb.get()
 		self.date = self.date_cb.get()
@@ -874,7 +1065,7 @@ class MainApp:
 
 		# EDIT MENU
 		edit_cat = edit.add_command(label='Category', command = self.edit_category)
-		edit_dev = edit.add_command(label='Device')
+		edit_dev = edit.add_command(label='Device', command = self.edit_device)
 		edit.add_separator()
 		edit_tftp = edit.add_command(label='Command')
 		edit_tftp = edit.add_command(label='TFTP')
@@ -930,6 +1121,7 @@ class MainApp:
 		self.l1 = Label(self.labelframe, text = "ID:").pack(anchor = "e")
 		self.l1 = Label(self.labelframe, text = "DEVICE:").pack(pady = 5, anchor = "e")
 		self.l1 = Label(self.labelframe, text = "IP:").pack(pady = 5, anchor = "e")
+		self.l1 = Label(self.labelframe, text = "CATEGORY:").pack(pady = 5, anchor = "e")
 		self.l1 = Label(self.labelframe, text = "USER:").pack(pady = 5, anchor = "e")
 		self.l1 = Label(self.labelframe, text = "SSH PASS:").pack(pady = 5, anchor = "e")
 		self.l1 = Label(self.labelframe, text = "ENABLE PASS:").pack(pady = 5, anchor = "e")
@@ -943,6 +1135,8 @@ class MainApp:
 		self.v_dname.pack(pady = 5, anchor = "w")
 		self.v_ip = Label(self.valframe, text = "-----")
 		self.v_ip.pack(pady = 5, anchor = "w")
+		self.v_cat = Label(self.valframe, text = "-----")
+		self.v_cat.pack(pady = 5, anchor = "w")
 		self.v_uname = Label(self.valframe, text = "-----")
 		self.v_uname.pack(pady = 5, anchor = "w")
 		self.v_pass = Label(self.valframe, text = "-----")
