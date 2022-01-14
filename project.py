@@ -11,7 +11,7 @@ import pyperclip
 
 class Database:
 	def __init__(self):
-		self.conn = sqlite3.connect('C:\\users\\admin\\desktop\\device_db', check_same_thread=False)
+		self.conn = sqlite3.connect('device_db', check_same_thread=False)
 		# self.conn = sqlite3.connect('device_db')
 		self.c = self.conn.cursor()
 
@@ -415,6 +415,8 @@ class MainApp:
 	
 	def selectNode(self, event):
 		item = self.treeview.selection()
+
+		print("----------ITEM--------{}".format(item))
 		self.dev_name = self.treeview.item(item, "text")
 		self.select_dev = "SELECT name, ip, cat, user, pass, id, enable FROM list WHERE name='{}'".format(self.dev_name)
 		self.dev = self.db.select(self.select_dev)
@@ -613,11 +615,19 @@ class MainApp:
 	
 	def run_command(self):
 		self.command = self.cb_command.get()
-		t = Thread(target=self.run_command_thread, args=(self.command,))
+
+		self.commands = self.multi_command.get("1.0","end")
+
+		command_list = self.commands.split('\n')
+		commands = list(filter(None, command_list)) # remove emty epement if exists
+
+		self.write_log(commands, 'COMMAND')
+		t = Thread(target=self.run_command_thread, args=(commands,))
 		t.start()
+			
 	
-	def run_command_thread(self, command):
-		self.command = command
+	def run_command_thread(self, commands):
+		self.command = commands
 		if self.command:
 			id = self.v_id.cget('text')
 			ip = self.v_ip.cget("text")
@@ -650,19 +660,20 @@ class MainApp:
 					time.sleep(.5)
 					output = remote_conn.recv(65535)
 					print (output)
-		
-					remote_conn.send("{}\n".format(self.command))
-					time.sleep(.9)
-					output = remote_conn.recv(65535)
-					print (type(output))
-					output = output.decode("utf-8")
-					self.write_log("{}".format(self.command.upper()), 'COMMAND')
-		
-					self.write_command_line(output)
+
+					for command in commands:
+						remote_conn.send("{}\n".format(self.command))
+						time.sleep(.9)
+						output = remote_conn.recv(65535)
+						print (type(output))
+						output = output.decode("utf-8")
+						self.write_log("{}".format(self.command.upper()), 'COMMAND')
+						self.write_command_line(output)
+						time.sleep(1)
 				except:
 					self.write_log('CONNECTION ERROR', "WARNING")
 		else:
-			self.write_log('SELECT COMMAND', 'WARNING')	
+			self.write_log('WRITE COMMAND', 'WARNING')	
 	
 	def deleteBackup(self):
 		# self.log.config(state = 'normal')
@@ -902,12 +913,15 @@ class MainApp:
 		self.bf = ttk.Frame(self.notebook)
 		self.cf = ttk.Frame(self.notebook)
 		self.sf = ttk.Frame(self.notebook)
+		self.cronf = ttk.Frame(self.notebook)
 
 		self.notebook.add(self.bf, text = "Backup")
 		self.notebook.pack(fill = 'both', padx = 5, pady = 5)
 		self.notebook.add(self.cf, text = "Config Manager")
 		self.notebook.pack(fill = 'both', padx = 5, pady = 5)
 		self.notebook.add(self.sf, text = "Statistic")
+		self.notebook.pack(fill = 'both', padx = 5, pady = 5)
+		self.notebook.add(self.cronf, text = "Cron Jobs")
 		self.notebook.pack(fill = 'both', padx = 5, pady = 5)
 
 		# LABEL FRAME
@@ -937,7 +951,7 @@ class MainApp:
 		self.en_pass.pack(pady = 5, anchor = "w")# canvas.pack(side = 'left')
 		
 		
-		
+
 		# BACKUP
 		#--------------------------------------------------------------------------------
 		self.bakframe = ttk.Frame(self.bf)
@@ -955,15 +969,19 @@ class MainApp:
 		
 		self.showframe = ttk.Frame(self.bf)
 		self.showframe.pack(side = "right", padx = 5, pady = 40, anchor = "n")
-		self.l1 = Label(self.showframe, text = "COMMAND").pack(anchor = "w", padx=10)
+		self.l1 = Label(self.showframe, text = "COMMAND").pack(anchor = "w", padx=0)
 		self.cb_command = ttk.Combobox(self.showframe)
-		self.cb_command.config(width = "18")
+		# self.cb_command.config(width = "100")
 
-		self.cb_command['values'] = []
-		self.cb_command.pack(pady = 5, padx=10)
+		self.multi_command = Text(self.showframe, height = 8, width = 70)
+		self.multi_command.pack()
+
+
+		# self.cb_command['values'] = []
+		# self.cb_command.pack(pady = 5, padx=10)
 
 		self.makeBackup = Button(self.showframe, width = "16", text = "Run", command = self.run_command)
-		self.makeBackup.pack(pady = 10)
+		self.makeBackup.pack(side = "right", pady=10, padx=0)
 		#-------------------------------------------------------------------------------
 
 		# CONFIG MANAGER TAB
