@@ -682,7 +682,7 @@ class MainApp:
 			try:
 				remote_conn_pre = paramiko.SSHClient()
 				remote_conn_pre.set_missing_host_key_policy(paramiko.AutoAddPolicy())# remote_conn_pre.connect("192.168.164.5", username = "admin", password = "123456", look_for_keys = False, allow_agent = False)
-				remote_conn_pre.connect("{}".format(ip), username = "{}".format(user), password = "{}".format(psw), look_for_keys = False, allow_agent = False)# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+				remote_conn_pre.connect("{}".format(ip), username = "{}".format(user), password = "{}".format(psw), port="4010", look_for_keys = False, allow_agent = False)# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 	
 				remote_conn = remote_conn_pre.invoke_shell()
 				output = remote_conn.recv(65535)
@@ -821,39 +821,40 @@ class MainApp:
 				self.write_log('SELECT DEVICE', 'WARNING')
 			else :
 				# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-				try:
-					remote_conn_pre = paramiko.SSHClient()
-					remote_conn_pre.set_missing_host_key_policy(paramiko.AutoAddPolicy())# remote_conn_pre.connect("192.168.164.5", username = "admin", password = "123456", look_for_keys = False, allow_agent = False)
-					remote_conn_pre.connect("{}".format(ip), username = "{}".format(user), password = "{}".format(psw), look_for_keys = False, allow_agent = False)# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-		
-					remote_conn = remote_conn_pre.invoke_shell()
-					output = remote_conn.recv(65535)
-					print(output)
-					remote_conn.send("en\n")
-					time.sleep(.5)
-					output = remote_conn.recv(65535)
-					print(output)
-					remote_conn.send("{}\n".format(enable))
-					time.sleep(.5)
-					output = remote_conn.recv(65535)
-					print (output)
-		
-					remote_conn.send("terminal length 0\n")
-					time.sleep(.5)
-					output = remote_conn.recv(65535)
-					print (output)
+				# try:
+				remote_conn_pre = paramiko.SSHClient()
+				remote_conn_pre.set_missing_host_key_policy(paramiko.AutoAddPolicy())# remote_conn_pre.connect("192.168.164.5", username = "admin", password = "123456", look_for_keys = False, allow_agent = False)
+				remote_conn_pre.connect("{}".format(ip), username = "{}".format(user), password = "{}".format(psw), port=4010, look_for_keys = False, allow_agent = False)# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+				# remote_conn_pre.connect("73.215.176.112", username = "nkobaidze", password = "nikakobaidze1", port=4010, look_for_keys = False, allow_agent = False)# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	
+				remote_conn = remote_conn_pre.invoke_shell()
+				output = remote_conn.recv(65535)
+				print(output)
+				remote_conn.send("en\n")
+				time.sleep(.5)
+				output = remote_conn.recv(65535)
+				print(output)
+				remote_conn.send("{}\n".format(enable))
+				time.sleep(.5)
+				output = remote_conn.recv(65535)
+				print (output)
+	
+				remote_conn.send("terminal length 0\n")
+				time.sleep(.5)
+				output = remote_conn.recv(65535)
+				print (output)
 
-					for command in commands:
-						remote_conn.send("{}\n".format(self.command))
-						time.sleep(.9)
-						output = remote_conn.recv(65535)
-						print (type(output))
-						output = output.decode("utf-8")
-						self.write_log("{}".format(self.command.upper()), 'COMMAND')
-						self.write_command_line(output)
-						time.sleep(1)
-				except:
-					self.write_log('CONNECTION ERROR', "WARNING")
+				for command in commands:
+					remote_conn.send("{}\n".format(command))
+					time.sleep(.9)
+					output = remote_conn.recv(65535)
+					print (type(output))
+					output = output.decode("utf-8")
+					self.write_log("{}".format(command.upper()), 'COMMAND')
+					self.write_command_line(output)
+					time.sleep(1)
+				# except:
+				# 	self.write_log('CONNECTION ERROR', "WARNING")
 		else:
 			self.write_log('WRITE COMMAND', 'WARNING')	
 	
